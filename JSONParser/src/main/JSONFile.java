@@ -20,14 +20,22 @@ public class JSONFile {
 	private static Map<String, Object> parseAllJsonFile(String json, Map<String, Object> map, ArrayList<Object> pattern) {
 		String[] key_valueKey = prepareJsonToParse(json);
 		
-		for (short i = 0; i < key_valueKey.length; i++) {
+		pattern.add(key_valueKey[0].trim().replace("\"", ""));
+		
+		for (short i = 1; i < key_valueKey.length; i++) { // first index is added before
 			String key_valueKey_index = key_valueKey[i].trim();
 			
-			if (i == 0 || i == key_valueKey.length - 1) pattern.add(key_valueKey_index.replace("\"", "")); // add the first key and the last value
-			else if (key_valueKey_index.startsWith("\"")) splitStringAndKey(key_valueKey_index, pattern); // a string value
-			else if (key_valueKey_index.startsWith("[")) splitListAndKey(key_valueKey_index, pattern); // a list value
-			else if (key_valueKey_index.startsWith("{")) i += splitJsonAndKey(pattern);
-			else splitStringAndKey(key_valueKey_index, pattern); // an integer value
+			if (i == key_valueKey.length - 1) {
+				addLastItem(key_valueKey_index, pattern); // add the first key and the last value
+				break;
+			}
+			
+			switch(key_valueKey_index.charAt(0)) {
+				case '"': splitStringAndKey(key_valueKey_index, pattern); break;
+				case '[': splitListAndKey(key_valueKey_index, pattern); break;
+				case '{': i += splitJsonAndKey(pattern); break;
+				default: splitStringAndKey(key_valueKey_index, pattern);
+			}
 		}
 
 		return addToMapThePattern(map, pattern);
@@ -36,8 +44,8 @@ public class JSONFile {
 	private static int splitJsonAndKey(ArrayList<Object> pattern) { // {"Name"
 		String[] items = newJsonFound();
 	
-		pattern.add(parseJson(items[0], null));
-		pattern.add(items[1].replace("\"", "").trim());
+		pattern.add(parseJson(items[0], null)); 
+		if (items[1] != null) pattern.add(items[1].replace("\"", "").trim());
 		
 		return items[0].split(":").length - 1; // - 1 is for i++ 
 	}
@@ -75,7 +83,7 @@ public class JSONFile {
 		
 		String preparedJson = json.substring(firstindex + 1, lastindex); // get rid of { } symbols and get the pattern of [key, value_key, value_key ... value]
 		
-		globalJsonValue = new StringBuilder(preparedJson);
+		setJsonGlobalValue(preparedJson);
 		
 		return preparedJson.split(":"); 
 	}
@@ -110,7 +118,7 @@ public class JSONFile {
 		int firstIndex = globalListValue.indexOf("[");
 		int endIndex = firstIndex;
 		
-		int listnumber = 1;   // 12, 34, [56, 128, 45]
+		int listnumber = 1;   // one list is already found above
 		
 		while (listnumber != 0) {
 			endIndex++;
@@ -146,6 +154,7 @@ public class JSONFile {
 	}
 	
 	private static String[] newJsonFound() {
+		String[] returns = new String[2];
 		int firstIndex = globalJsonValue.indexOf("{");
 		int endIndex = firstIndex;
 		
@@ -162,13 +171,29 @@ public class JSONFile {
 		}
 		
 		String newJsonString = globalJsonValue.substring(firstIndex, endIndex + 1); // + 1 is for include }
-		String key = globalJsonValue.substring(globalJsonValue.indexOf("\"", endIndex), globalJsonValue.indexOf(":", endIndex));
+		returns[0] = newJsonString;
 		
+		try {
+			String key = globalJsonValue.substring(globalJsonValue.indexOf("\"", endIndex), globalJsonValue.indexOf(":", endIndex));
+			returns[1] = key;
+		} catch(StringIndexOutOfBoundsException ex) {
+			// do nothing at this exception
+		}
 		
 		globalJsonValue = globalJsonValue.deleteCharAt(firstIndex);
 		
-		String[] returns = {newJsonString, key};
-		
 		return returns;
+	}
+	
+	private static void setJsonGlobalValue(String json) {
+		if (globalJsonValue == null) globalJsonValue = new StringBuilder(json);
+	}
+	
+	private static void addLastItem(String item, ArrayList<Object> pattern) {
+		switch(item.charAt(0)) {
+			case '"': pattern.add(item.replace("\"", "")); break;
+			case '[': globalListValue = new StringBuilder(delFirstAndLastChar(item)); pattern.add(convertStringToArrayList(item)); break;
+			case '{': pattern.add(parseJson(newJsonFound()[0], null));
+		}
 	}
 }
