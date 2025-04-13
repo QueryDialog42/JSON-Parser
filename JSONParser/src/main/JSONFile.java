@@ -5,16 +5,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class JSONFile {
-	static private StringBuilder globalListValue;
 	static private StringBuilder globalJsonValue;
+	
+	public static Map<String, Object> parseJson(String json) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		ArrayList<Object> pattern = new ArrayList<Object>();
+		
+		return parseAllJsonFile(json, map, pattern);
+		
+	}
 	
 	public static Map<String, Object> parseJson(String json, String onlykey) {
 		Map<String, Object> map = new HashMap<String, Object>();
 		ArrayList<Object> pattern = new ArrayList<Object>();
 		
-		if (onlykey == null) return parseAllJsonFile(json, map, pattern);
-		else return parseAllJsonFile(json, map, pattern);
-		
+		return parseAllJsonFile(limitJsonString(json, onlykey), map, pattern);
 	}
 	
 	private static Map<String, Object> parseAllJsonFile(String json, Map<String, Object> map, ArrayList<Object> pattern) {
@@ -44,7 +49,7 @@ public class JSONFile {
 	private static int splitJsonAndKey(ArrayList<Object> pattern) { // {"Name"
 		String[] items = newJsonFound();
 	
-		pattern.add(parseJson(items[0], null)); 
+		pattern.add(parseJson(items[0])); 
 		if (items[1] != null) pattern.add(items[1].replace("\"", "").trim());
 		
 		return items[0].split(":").length - 1; // - 1 is for i++ 
@@ -65,16 +70,28 @@ public class JSONFile {
 	}
 	
 	private static void splitListAndKey(String item, ArrayList<Object> pattern) {
-		int indexOfLastList = item.lastIndexOf("]"); // find the last ] in order to which commas should not be splitted
-		int indexOfMiddleComma = item.indexOf(",", indexOfLastList); //find the first , in order to split as key - value
+		int indexOfLastList;
+		String value;
+		String key;
 		
-		String value = item.substring(0, indexOfMiddleComma); // the part before comma, comma not included (list)
-		String key = item.substring(indexOfMiddleComma + 1); // the part after comma, comma not included by + 1 (key)
+		if ((indexOfLastList = item.lastIndexOf("]")) != -1) { // find the last ] in order to which commas should not be splitted
+			int indexOfMiddleComma = item.indexOf(",", indexOfLastList); //find the first , in order to split as key - value
 		
-		globalListValue = new StringBuilder(delFirstAndLastChar(value));
+			value = item.substring(0, indexOfMiddleComma); // the part before comma, comma not included (list)
+			key = item.substring(indexOfMiddleComma + 1); // the part after comma, comma not included by + 1 (key)
+		}
+		else { // list includes a json. item now do not has last index of ]
+			value = newStringArray();
+			
+			int indexOfMiddleComma = globalJsonValue.indexOf(",", globalJsonValue.lastIndexOf(value)); // find , end of the list
+			int firstIndex = globalJsonValue.indexOf("\"", indexOfMiddleComma); // find the first " for key
+			int lastIndex = globalJsonValue.indexOf("\"", firstIndex);
+			key = globalJsonValue.substring(firstIndex, lastIndex);
+		}
+		
 		
 		pattern.add(convertStringToArrayList(value));
-		pattern.add(key.replace("\"", "").trim());
+		if (key.isEmpty() == false) pattern.add(key.replace("\"", "").trim());
 	}
 	
 	private static String[] prepareJsonToParse(String json) {
@@ -99,11 +116,21 @@ public class JSONFile {
 			switch(item.charAt(0)) {
 				case '[': i += newListFounded(listValue); break;
 				case '"': listValue.add(item.replace("\"", "")); break;
+				case '{': i += doJsonLogics(listValue); break; // not works correctly
 				default: listValue.add(item);
 			}
 		}
 
 		return listValue;
+	}
+	
+	private static int doJsonLogics(ArrayList<Object> listValue) {
+		String[] items = newJsonFound();
+		
+		listValue.add(parseJson(items[0]));
+		
+		if (items[1] != null) listValue.add(items[1]);
+		return items[0].split(":").length - 1;
 	}
 	
 	private static int newListFounded(ArrayList<Object> listValue) {
@@ -115,14 +142,14 @@ public class JSONFile {
 	}
 	
 	private static String newStringArray() {
-		int firstIndex = globalListValue.indexOf("[");
+		int firstIndex = globalJsonValue.indexOf("[");
 		int endIndex = firstIndex;
 		
 		int listnumber = 1;   // one list is already found above
 		
 		while (listnumber != 0) {
 			endIndex++;
-			char character = globalListValue.charAt(endIndex);
+			char character = globalJsonValue.charAt(endIndex);
 			
 			switch(character) {
 				case '[': listnumber++; break;
@@ -130,8 +157,8 @@ public class JSONFile {
 			}
 		}
 		
-		String newListString = globalListValue.substring(firstIndex, endIndex + 1); // + 1 is for include ]
-		globalListValue = globalListValue.deleteCharAt(firstIndex);
+		String newListString = globalJsonValue.substring(firstIndex, endIndex + 1); // + 1 is for include ]
+		
 		
 		return newListString; 
 	}
@@ -149,6 +176,7 @@ public class JSONFile {
 	}
 	
 	private static String[] prepareStringToParse(String list) {
+		globalJsonValue = globalJsonValue.deleteCharAt(globalJsonValue.indexOf(list));
 		list = delFirstAndLastChar(list);
 		return list.split(",");
 	}
@@ -192,8 +220,40 @@ public class JSONFile {
 	private static void addLastItem(String item, ArrayList<Object> pattern) {
 		switch(item.charAt(0)) {
 			case '"': pattern.add(item.replace("\"", "")); break;
-			case '[': globalListValue = new StringBuilder(delFirstAndLastChar(item)); pattern.add(convertStringToArrayList(item)); break;
-			case '{': pattern.add(parseJson(newJsonFound()[0], null));
+			case '[': pattern.add(convertStringToArrayList(item)); break;
+			case '{': pattern.add(parseJson(newJsonFound()[0]));
 		}
+	}
+	
+	private static String limitJsonString(String json, String onlykey) {
+		int onlyKeyIndex = json.indexOf(onlykey);
+		
+		String extractedJson = json.substring(onlyKeyIndex - 1);
+		char character = extractedJson.split(":")[1].trim().charAt(0);
+		switch(character) {
+			case '"': return extractJsonString(extractedJson, 1);
+			case '[': return extractJsonList(extractedJson);
+			case '{': return extractJsonJson(extractedJson);
+			default: return extractJsonString(extractedJson, 1);
+		}
+	}
+	
+	private static String extractJsonString(String extractedJson, int fromIndex) {
+		for (short i = 0; i < 3; i++) {
+			fromIndex = extractedJson.indexOf("\"", fromIndex + 1);
+		}
+		return "{" + extractedJson.substring(0, fromIndex + 1) + "}";
+	}
+	
+	private static String extractJsonList(String extractedJson) {
+		String list = newStringArray();
+		return "{" +  extractedJson.substring(0, extractedJson.indexOf(":") + 1) + list + "}";
+	}
+	
+	private static String extractJsonJson(String extractedJson) {
+		globalJsonValue = new StringBuilder(extractedJson);
+		String json =  "{" + extractedJson.substring(0, extractedJson.indexOf(":") + 1) + newJsonFound()[0] + "}";
+		globalJsonValue = null;
+		return json;	
 	}
 }
