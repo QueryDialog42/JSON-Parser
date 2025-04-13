@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class Main {
 	public static void main(String[] args) {
-		String json = "[{\"Position\": \"1\", \"Team Team\": \"Wycombe Wanderers\", \"Pl Played\": {\"Name\": \"Anderson\", \"Age\": 23, \"Job\": \"Footballer\"}, \"W Won\": [12, 34, [56, [100, \"Hello\"], 128, 45], 567, [23, 14]], \"D Drawn\": \"4\", \"L Lost\": 2, \"F Goals For\": \"43\", \"A Goals Against\": [\"Michael\", \"Frank\", \"Mahmut\"], \"GD Goal Difference\": \"+21\", \"Pts Points\": {\"Name\": \"Wowowow\", \"The List\": [\"23Ertan\", 45, [56]]}, \"MyJob\": \"Teacher\"}]";
+		String json = "[{\"Position\": \"1\", \"Team Team\": \"Wycombe Wanderers\", \"Pl Played\": {\"Name\": \"Anderson\", \"Age\": 23, \"Job\": \"Footballer\"}, \"W Won\": [12, 34, [56, [100, \"Hello\"], 128, 45], 567, [23, 14]], \"D Drawn\": \"4\", \"L Lost\": 2, \"F Goals For\": \"43\", \"A Goals Against\": [\"Michael\", \"Frank\", \"Mahmut\"], \"GD Goal Difference\": \"+21\", \"Pts Points\": {\"Name\": \"Wowowow\", \"The List\": [\"23\", 45, [56]]}, \"MyJob\": \"Teacher\"}]";
 		
 		Map<String, Object> map = JSONFile.parseJson(json, null);
 		
