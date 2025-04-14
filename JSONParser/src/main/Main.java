@@ -5,18 +5,20 @@ import java.util.Map;
 
 public class Main {
 	public static void main(String[] args) {
-		String json = "{\"Driver\": {\"Name\": \"Anderson\", \"Age\": 23, \"Job\": \"Teacher\"}, \"Car\": {\"Model\": \"Audi\", \"Years\": [2020, 2021, 2022]}, \"Class Members ID\": [11, 5, 34, 367, [45, 13, [67, 46, 44]], 128, [13, 14, 15, 16]], \"Manager\": \"Maria\", \"Education Season\": \"Summer\", \"Education Time\": \"6\", \"Countries\": [\"Istanbul\", \"Ankara\"], \"Times\": [\"12.00\", \"18.00\"]}";
+		String json = "{\"Driver\": {\"Name\": \"Anderson\", \"Age\": 23, \"Job\": \"Teacher\"}, \"Car\": {\"Model\": \"Audi\", \"Years\": {\"2021\": [\"Very Old\", \"Old\", \"New\"]}}, \"Class Members ID\": [11, 5, 34, 367, [45, 13, [67, 46, 44]], 128, [13, 14, 15, 16]], \"Manager\": \"Maria\", \"Education Season\": \"Summer\", \"Education Time\": \"6\", \"Countries\": [\"Istanbul\", \"Ankara\"], \"Times\": [\"12.00\", \"18.00\"]}";
 
 		Map<String, Object> map = JSONFile.parseJson(json);
 		
 		// example of getting map
 		
+		Map<?, ?> carmap = (Map<?, ?>)map.get("Car");
+		Map<?, ?> yearsMap = (Map<?, ?>)carmap.get("Years");
+		ArrayList<?> years = (ArrayList<?>)yearsMap.get("2021");
+		System.out.println(years.get(1));
+		
+		
 		Map<?, ?> map1 = (Map<?, ?>)map.get("Driver");
 		System.out.println(map1.get("Age"));
-		
-		Map<?, ?> map2 = (Map<?, ?>)map.get("Car");
-		ArrayList<?> caryears = (ArrayList<?>)map2.get("Years");
-		System.out.println(caryears.get(2));
 		
 		// all class member ID
 		
@@ -46,6 +48,7 @@ public class Main {
 		ArrayList<?> list1 = (ArrayList<?>)map.get("Times");
 		System.out.println(list1.get(0));
 	}
+	
 	
 	public static void printAllItems(ArrayList<?> list) {
 		for (Object i : list) {

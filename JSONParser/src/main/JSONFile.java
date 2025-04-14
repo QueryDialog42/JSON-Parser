@@ -56,6 +56,8 @@ public class JSONFile {
 	}
 	
 	private static Map<String, Object> addToMapThePattern(Map<String, Object> map, ArrayList<Object> pattern) {
+		if (pattern.size() % 2 != 0) pattern.removeLast(); // sometimes the last key is added the wrong pattern
+		
 		for (short i = 0; i < pattern.size(); i += 2) {
 			map.put(pattern.get(i).toString(), pattern.get(i + 1)); // even numbers are keys, odd numbers are values
 		}
